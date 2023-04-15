@@ -13,7 +13,7 @@ pygame.display.set_caption("Conway's Game of Life")
 CELL_SIZE = 10
 MIN_CELL_SIZE = 1
 MAX_CELL_SIZE = 100
-VIEW_SPEED = 5
+VIEW_SPEED = 0.25
 
 # Set the grid
 GRID_WIDTH = 800  # Set a fixed width and height for the grid
@@ -21,8 +21,8 @@ GRID_HEIGHT = 600
 grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=bool)
 
 # Set up the initial view
-view_x = 0
-view_y = 0
+view_x = GRID_WIDTH // 2
+view_y = GRID_HEIGHT // 2
 
 # Function to draw the grid on the Pygame display
 def draw_grid():
@@ -67,6 +67,7 @@ def update_grid():
 # Main game loop
 running = True
 paused = True
+drawing = False
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -75,26 +76,36 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 paused = not paused
-            elif event.key == pygame.K_LEFT:
-                view_x -= 1
-            elif event.key == pygame.K_RIGHT:
-                view_x += 1
-            elif event.key == pygame.K_UP:
-                view_y -= 1
-            elif event.key == pygame.K_DOWN:
-                view_y += 1
+            # elif event.key == pygame.K_LEFT:
+            #     view_x -= 1
+            # elif event.key == pygame.K_RIGHT:
+            #     view_x += 1
+            # elif event.key == pygame.K_UP:
+            #     view_y -= 1
+            # elif event.key == pygame.K_DOWN:
+            #     view_y += 1
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                x, y = pygame.mouse.get_pos()
-                grid_x = (x // CELL_SIZE) + view_x
-                grid_y = (y // CELL_SIZE) + view_y
-                grid[grid_x][grid_y] = 1
+                drawing = True
             elif event.button == 4:
                 # Handle mouse wheel up to zoom in
+                old_cell_size = CELL_SIZE
                 CELL_SIZE = min(MAX_CELL_SIZE, CELL_SIZE + 1)
+                dx = ((SCREEN_WIDTH // old_cell_size) - (SCREEN_WIDTH // CELL_SIZE)) // 2
+                dy = ((SCREEN_HEIGHT // old_cell_size) - (SCREEN_HEIGHT // CELL_SIZE)) // 2
+                view_x += dx
+                view_y += dy
             elif event.button == 5:
                 # Handle mouse wheel down to zoom out
+                old_cell_size = CELL_SIZE
                 CELL_SIZE = max(MIN_CELL_SIZE, CELL_SIZE - 1)
+                dx = ((SCREEN_WIDTH // old_cell_size) - (SCREEN_WIDTH // CELL_SIZE)) // 2
+                dy = ((SCREEN_HEIGHT // old_cell_size) - (SCREEN_HEIGHT // CELL_SIZE)) // 2
+                view_x += dx
+                view_y += dy
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                drawing = False
 
     # Update the view position based on the arrow keys
     keys = pygame.key.get_pressed()
@@ -110,7 +121,14 @@ while running:
     # Update the grid
     if not paused:
         grid = update_grid()
-        # time.sleep(0.001)
+        time.sleep(0.001)
+
+    # Draw cells when the left mouse button is pressed
+    if drawing:
+        x, y = pygame.mouse.get_pos()
+        grid_x = (x // CELL_SIZE) + view_x
+        grid_y = (y // CELL_SIZE) + view_y
+        grid[grid_x][grid_y] = 1
 
     # Clear the screen and draw the cells
     screen.fill((0, 0, 0))
