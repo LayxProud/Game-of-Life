@@ -16,13 +16,13 @@ MAX_CELL_SIZE = 100
 VIEW_SPEED = 0.25
 
 # Set the grid
-GRID_WIDTH = 800  # Set a fixed width and height for the grid
+GRID_WIDTH = 800 
 GRID_HEIGHT = 600
 grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=bool)
 
 # Set up the initial view
-view_x = GRID_WIDTH // 2
-view_y = GRID_HEIGHT // 2
+view_x = GRID_WIDTH // 2 - SCREEN_WIDTH // (2 * CELL_SIZE)
+view_y = GRID_HEIGHT // 2 - SCREEN_HEIGHT // (2 * CELL_SIZE)
 
 # Function to draw the grid on the Pygame display
 def draw_grid():
@@ -76,14 +76,6 @@ while running:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 paused = not paused
-            # elif event.key == pygame.K_LEFT:
-            #     view_x -= 1
-            # elif event.key == pygame.K_RIGHT:
-            #     view_x += 1
-            # elif event.key == pygame.K_UP:
-            #     view_y -= 1
-            # elif event.key == pygame.K_DOWN:
-            #     view_y += 1
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 drawing = True
@@ -99,10 +91,10 @@ while running:
                 # Handle mouse wheel down to zoom out
                 old_cell_size = CELL_SIZE
                 CELL_SIZE = max(MIN_CELL_SIZE, CELL_SIZE - 1)
-                dx = ((SCREEN_WIDTH // old_cell_size) - (SCREEN_WIDTH // CELL_SIZE)) // 2
-                dy = ((SCREEN_HEIGHT // old_cell_size) - (SCREEN_HEIGHT // CELL_SIZE)) // 2
-                view_x += dx
-                view_y += dy
+                grid_center_x = GRID_WIDTH // 2
+                grid_center_y = GRID_HEIGHT // 2
+                view_x = grid_center_x - (SCREEN_WIDTH // (2 * CELL_SIZE))
+                view_y = grid_center_y - (SCREEN_HEIGHT // (2 * CELL_SIZE))
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 drawing = False
