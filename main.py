@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+import time
 
 # Set up the Pygame display
 pygame.init()
@@ -8,11 +9,16 @@ SCREEN_HEIGHT = 600
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Conway's Game of Life")
 
-# Set up the grid
+# Set the initial zoom level
 CELL_SIZE = 10
-GRID_WIDTH = 200  # Set a fixed width and height for the grid
-GRID_HEIGHT = 200
-grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=int)
+MIN_CELL_SIZE = 1
+MAX_CELL_SIZE = 100
+VIEW_SPEED = 5
+
+# Set the grid
+GRID_WIDTH = 800  # Set a fixed width and height for the grid
+GRID_HEIGHT = 600
+grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=bool)
 
 # Set up the initial view
 view_x = 0
@@ -42,21 +48,25 @@ def get_neighbors(x, y):
 
 # Function to update the grid for one step
 def update_grid():
-    new_grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=int)
-    for x in range(GRID_WIDTH):
-        for y in range(GRID_HEIGHT):
-            num_neighbors = sum([grid[nx][ny] for nx, ny in get_neighbors(x, y)])
-            if grid[x][y] == 1:
-                if num_neighbors in [2, 3]:
-                    new_grid[x][y] = 1
-            else:
-                if num_neighbors == 3:
-                    new_grid[x][y] = 1
+    # Compute the number of live neighbors for each cell
+    num_neighbors = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=int)
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            if i == 0 and j == 0:
+                continue
+            num_neighbors += np.roll(grid, (i, j), axis=(0, 1))
+
+    # Apply the Game of Life rules to compute the next state
+    new_grid = np.logical_or(
+        np.logical_and(grid, num_neighbors == 2),
+        num_neighbors == 3
+    )
+
     return new_grid
 
 # Main game loop
 running = True
-paused = False
+paused = True
 while running:
     # Handle events
     for event in pygame.event.get():
@@ -74,18 +84,42 @@ while running:
             elif event.key == pygame.K_DOWN:
                 view_y += 1
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = pygame.mouse.get_pos()
-            grid_x = (x // CELL_SIZE) + view_x
-            grid_y = (y // CELL_SIZE) + view_y
-            grid[grid_x][grid_y] = 1
+            if event.button == 1:
+                x, y = pygame.mouse.get_pos()
+                grid_x = (x // CELL_SIZE) + view_x
+                grid_y = (y // CELL_SIZE) + view_y
+                grid[grid_x][grid_y] = 1
+            elif event.button == 4:
+                # Handle mouse wheel up to zoom in
+                CELL_SIZE = min(MAX_CELL_SIZE, CELL_SIZE + 1)
+            elif event.button == 5:
+                # Handle mouse wheel down to zoom out
+                CELL_SIZE = max(MIN_CELL_SIZE, CELL_SIZE - 1)
+
+    # Update the view position based on the arrow keys
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        view_x -= VIEW_SPEED
+    if keys[pygame.K_RIGHT]:
+        view_x += VIEW_SPEED
+    if keys[pygame.K_UP]:
+        view_y -= VIEW_SPEED
+    if keys[pygame.K_DOWN]:
+        view_y += VIEW_SPEED
 
     # Update the grid
     if not paused:
         grid = update_grid()
+        # time.sleep(0.001)
 
-    # Clear the screen and draw the grid
+    # Clear the screen and draw the cells
     screen.fill((0, 0, 0))
-    draw_grid()
+    cells = np.argwhere(grid)
+    for cell in cells:
+        screen_x = (cell[0] - view_x) * CELL_SIZE
+        screen_y = (cell[1] - view_y) * CELL_SIZE
+        rect = pygame.Rect(screen_x, screen_y, CELL_SIZE, CELL_SIZE)
+        pygame.draw.rect(screen, (255, 255, 255), rect)
 
     # Update the Pygame display
     pygame.display.flip()
