@@ -1,79 +1,78 @@
-import time
 import pygame
 import numpy as np
 
-COLOR_BG = (10, 10, 10,)
-COLOR_GRID = (40, 40, 40)
-COLOR_DIE_NEXT = (170, 170, 170)
-COLOR_ALIVE_NEXT = (255, 255, 255)
-
+# Set up the Pygame display
 pygame.init()
-pygame.display.set_caption("Game of Life")
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Conway's Game of Life")
 
+# Set up the grid
+CELL_SIZE = 10
+GRID_WIDTH = SCREEN_WIDTH // CELL_SIZE
+GRID_HEIGHT = SCREEN_HEIGHT // CELL_SIZE
+grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=int)
 
-def update(screen, cells, size, with_progress=False):
-    updated_cells = np.zeros((cells.shape[0], cells.shape[1]))
+# Function to draw the grid on the Pygame display
+def draw_grid():
+    for x in range(GRID_WIDTH):
+        for y in range(GRID_HEIGHT):
+            if grid[x][y] == 1:
+                rect = pygame.Rect(x*CELL_SIZE, y*CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                pygame.draw.rect(screen, (255, 255, 255), rect)
 
-    for row, col in np.ndindex(cells.shape):
-        alive = np.sum(cells[row-1:row+2, col-1:col+2]) - cells[row, col]
-        color = COLOR_BG if cells[row, col] == 0 else COLOR_ALIVE_NEXT
+# Function to get the indices of neighboring cells
+def get_neighbors(x, y):
+    neighbors = []
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            if i == 0 and j == 0:
+                continue
+            neighbors.append(((x+i) % GRID_WIDTH, (y+j) % GRID_HEIGHT))
+    return neighbors
 
-        if cells[row, col] == 1:
-            if alive < 2 or alive > 3:
-                if with_progress:
-                    color = COLOR_DIE_NEXT
-            elif 2 <= alive <= 3:
-                updated_cells[row, col] = 1
-                if with_progress:
-                    color = COLOR_ALIVE_NEXT
-        else:
-            if alive == 3:
-                updated_cells[row, col] = 1
-                if with_progress:
-                    color = COLOR_ALIVE_NEXT
+# Function to update the grid for one step
+def update_grid():
+    new_grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=int)
+    for x in range(GRID_WIDTH):
+        for y in range(GRID_HEIGHT):
+            num_neighbors = sum([grid[nx][ny] for nx, ny in get_neighbors(x, y)])
+            if grid[x][y] == 1:
+                if num_neighbors in [2, 3]:
+                    new_grid[x][y] = 1
+            else:
+                if num_neighbors == 3:
+                    new_grid[x][y] = 1
+    return new_grid
 
-        pygame.draw.rect(screen, color, (col * size, row * size, size - 1, size - 1))
+# Main game loop
+running = True
+paused = False
+while running:
+    # Handle events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                paused = not paused
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = pygame.mouse.get_pos()
+            x //= CELL_SIZE
+            y //= CELL_SIZE
+            grid[x][y] = 1
 
-    return updated_cells
+    # Update the grid
+    if not paused:
+        grid = update_grid()
 
+    # Clear the screen and draw the grid
+    screen.fill((0, 0, 0))
+    draw_grid()
 
-def main():
-    pygame.init()
-    screen = pygame.display.set_mode((800, 600))
-
-    cells = np.zeros((60, 80))
-    screen.fill(COLOR_GRID)
-    update(screen, cells, 10)
-
+    # Update the Pygame display
     pygame.display.flip()
-    pygame.display.update()
 
-    running = False
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                return
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    running = not running
-                    update(screen, cells, 10)
-                    pygame.display.update()
-            if pygame.mouse.get_pressed()[0]:
-                pos = pygame.mouse.get_pos()
-                cells[pos[1] // 10, pos[0] // 10] = 1
-                update(screen, cells, 10)
-                pygame.display.update()
-
-        screen.fill(COLOR_GRID)
-
-        if running:
-            cells = update(screen, cells, 10, with_progress=True)
-            pygame.display.update()
-
-        time.sleep(0.001)
-
-
-if __name__ == "__main__":
-    main()
+# Quit Pygame
+pygame.quit()
