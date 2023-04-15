@@ -2,17 +2,20 @@ import time
 import pygame
 import numpy as np
 
-COLOR_BG = (10, 10, 10)
+COLOR_BG = (10, 10, 10,)
 COLOR_GRID = (40, 40, 40)
 COLOR_DIE_NEXT = (170, 170, 170)
 COLOR_ALIVE_NEXT = (255, 255, 255)
+
+pygame.init()
+pygame.display.set_caption("Game of Life")
 
 
 def update(screen, cells, size, with_progress=False):
     updated_cells = np.zeros((cells.shape[0], cells.shape[1]))
 
     for row, col in np.ndindex(cells.shape):
-        alive = np.sum(cells[row-1:row+2, col-1:col:2]) - cells[row, col]
+        alive = np.sum(cells[row-1:row+2, col-1:col+2]) - cells[row, col]
         color = COLOR_BG if cells[row, col] == 0 else COLOR_ALIVE_NEXT
 
         if cells[row, col] == 1:
@@ -23,7 +26,6 @@ def update(screen, cells, size, with_progress=False):
                 updated_cells[row, col] = 1
                 if with_progress:
                     color = COLOR_ALIVE_NEXT
-
         else:
             if alive == 3:
                 updated_cells[row, col] = 1
@@ -31,8 +33,9 @@ def update(screen, cells, size, with_progress=False):
                     color = COLOR_ALIVE_NEXT
 
         pygame.draw.rect(screen, color, (col * size, row * size, size - 1, size - 1))
-        
+
     return updated_cells
+
 
 def main():
     pygame.init()
@@ -46,8 +49,7 @@ def main():
     pygame.display.update()
 
     running = False
-    
-    # Game Loop
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -70,7 +72,8 @@ def main():
             cells = update(screen, cells, 10, with_progress=True)
             pygame.display.update()
 
-            time.sleep(1)
+        time.sleep(0.001)
+
 
 if __name__ == "__main__":
     main()
