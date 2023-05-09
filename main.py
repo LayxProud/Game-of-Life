@@ -24,18 +24,6 @@ grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=bool)
 view_x = GRID_WIDTH // 2 - SCREEN_WIDTH // (2 * CELL_SIZE)
 view_y = GRID_HEIGHT // 2 - SCREEN_HEIGHT // (2 * CELL_SIZE)
 
-# Function to get the indices of neighboring cells
-def get_neighbors(x, y):
-    neighbors = []
-    for i in range(-1, 2):
-        for j in range(-1, 2):
-            if i == 0 and j == 0:
-                continue
-            nx = (x+i) % GRID_WIDTH
-            ny = (y+j) % GRID_HEIGHT
-            neighbors.append((nx, ny))
-    return neighbors
-
 # Function to update the grid for one step
 def update_grid():
     # Compute the number of live neighbors for each cell
