@@ -24,16 +24,6 @@ grid = np.zeros((GRID_WIDTH, GRID_HEIGHT), dtype=bool)
 view_x = GRID_WIDTH // 2 - SCREEN_WIDTH // (2 * CELL_SIZE)
 view_y = GRID_HEIGHT // 2 - SCREEN_HEIGHT // (2 * CELL_SIZE)
 
-# Function to draw the grid on the Pygame display
-def draw_grid():
-    for x in range(GRID_WIDTH):
-        for y in range(GRID_HEIGHT):
-            if grid[x][y] == 1:
-                screen_x = (x - view_x) * CELL_SIZE
-                screen_y = (y - view_y) * CELL_SIZE
-                rect = pygame.Rect(screen_x, screen_y, CELL_SIZE, CELL_SIZE)
-                pygame.draw.rect(screen, (255, 255, 255), rect)
-
 # Function to get the indices of neighboring cells
 def get_neighbors(x, y):
     neighbors = []
@@ -68,18 +58,31 @@ def update_grid():
 running = True
 paused = True
 drawing = False
+erasing = False
 while running:
     # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            # Handle quitting the game
             running = False
+
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
+                # Handle pausing the game
                 paused = not paused
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
+            if event.button == pygame.BUTTON_LEFT:
+                # Handle drawing cells
                 drawing = True
-            elif event.button == 4:
+            elif event.button == pygame.BUTTON_RIGHT:
+                # Handle erasing cells
+                erasing = True
+                x, y = pygame.mouse.get_pos()
+                grid_x = (x // CELL_SIZE) + view_x
+                grid_y = (y // CELL_SIZE) + view_y
+                grid[grid_x][grid_y] = 0
+            elif event.button == pygame.BUTTON_WHEELUP:
                 # Handle mouse wheel up to zoom in
                 old_cell_size = CELL_SIZE
                 CELL_SIZE = min(MAX_CELL_SIZE, CELL_SIZE + 1)
@@ -87,7 +90,7 @@ while running:
                 dy = ((SCREEN_HEIGHT // old_cell_size) - (SCREEN_HEIGHT // CELL_SIZE)) // 2
                 view_x += dx
                 view_y += dy
-            elif event.button == 5:
+            elif event.button == pygame.BUTTON_WHEELDOWN:
                 # Handle mouse wheel down to zoom out
                 old_cell_size = CELL_SIZE
                 CELL_SIZE = max(MIN_CELL_SIZE, CELL_SIZE - 1)
@@ -95,10 +98,13 @@ while running:
                 grid_center_y = GRID_HEIGHT // 2
                 view_x = grid_center_x - (SCREEN_WIDTH // (2 * CELL_SIZE))
                 view_y = grid_center_y - (SCREEN_HEIGHT // (2 * CELL_SIZE))
+                
         elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:
+            if event.button == pygame.BUTTON_LEFT:
                 drawing = False
-
+            elif event.button == pygame.BUTTON_RIGHT:
+                erasing = False
+            
     # Update the view position based on the arrow keys
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -121,6 +127,13 @@ while running:
         grid_x = (x // CELL_SIZE) + view_x
         grid_y = (y // CELL_SIZE) + view_y
         grid[grid_x][grid_y] = 1
+
+    # Erase cells when the right mouse button is pressed
+    if erasing:
+        x, y = pygame.mouse.get_pos()
+        grid_x = (x // CELL_SIZE) + view_x
+        grid_y = (y // CELL_SIZE) + view_y
+        grid[grid_x][grid_y] = 0
 
     # Clear the screen and draw the cells
     screen.fill((0, 0, 0))
